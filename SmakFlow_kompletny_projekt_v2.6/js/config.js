@@ -2,11 +2,7 @@ export const APP_CONFIG = {
   appName: 'Smakflow',
   brandName: 'Lody u Lucjana',
   version: '2.6.0',
-  defaultLocations: [
-    'Naramowicka 336',
-    'Karpia 11',
-    'Magazyn Główny'
-  ],
+  defaultLocations: ['Naramowicka 336', 'Karpia 11', 'Magazyn Główny'],
   defaultPortionsPerTub: 35,
   defaultHourlyRate: 28.10,
   theme: 'dark-navy'
@@ -15,10 +11,7 @@ export const APP_CONFIG = {
 export const SUPABASE_CONFIG = {
   url: window.__SMAKFLOW_SUPABASE_URL__ || 'https://bxmgiigbaxzmqcgjiulh.supabase.co',
   anonKey: window.__SMAKFLOW_SUPABASE_ANON_KEY__ || 'sb_publishable_Vu5qlLsoquae30Rw6SA4Ug_UqI7ugEU',
-  functions: {
-    apiProxy: 'api-proxy',
-    iposSync: 'ipos-sync'
-  }
+  functions: { apiProxy: 'api-proxy', iposSync: 'ipos-sync' }
 };
 
 window.APP_CONFIG = APP_CONFIG;
@@ -39,58 +32,45 @@ function initLoginGateFallback() {
     developer: 'gateSekcjaDeveloper'
   };
 
-  if (typeof window.przelaczZakladkeGate !== 'function') {
-    window.przelaczZakladkeGate = function (tab) {
-      Object.entries(ids).forEach(([name, id]) => {
-        const section = document.getElementById(id);
-        if (section) section.classList.toggle('hidden', name !== tab);
-      });
+  window.przelaczZakladkeGate = function (tab) {
+    Object.entries(ids).forEach(([name, id]) => {
+      const section = document.getElementById(id);
+      if (section) section.classList.toggle('hidden', name !== tab);
+    });
+    document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.add('hidden');
+    document.getElementById('gateResetPinBox')?.classList.add('hidden');
 
-      document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.add('hidden');
-      document.getElementById('gateResetPinBox')?.classList.add('hidden');
+    const pracownikBtn = document.getElementById('btnGateTabPracownik');
+    const adminBtn = document.getElementById('btnGateTabAdmin');
+    [pracownikBtn, adminBtn].forEach((button) => {
+      if (!button) return;
+      button.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
+      button.classList.add('text-slate-600');
+    });
+    const active = tab === 'admin' ? adminBtn : tab === 'pracownik' ? pracownikBtn : null;
+    if (active) {
+      active.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
+      active.classList.remove('text-slate-600');
+    }
+  };
 
-      const pracownikBtn = document.getElementById('btnGateTabPracownik');
-      const adminBtn = document.getElementById('btnGateTabAdmin');
-      [pracownikBtn, adminBtn].forEach((button) => {
-        if (!button) return;
-        button.classList.remove('bg-white', 'text-slate-900', 'shadow-xs');
-        button.classList.add('text-slate-600');
-      });
-      const active = tab === 'admin' ? adminBtn : tab === 'pracownik' ? pracownikBtn : null;
-      if (active) {
-        active.classList.add('bg-white', 'text-slate-900', 'shadow-xs');
-        active.classList.remove('text-slate-600');
-      }
-      document.getElementById('gateTabs')?.classList.remove('hidden');
-    };
-  }
-
-  if (typeof window.otworzRejestracjePracownika !== 'function') {
-    window.otworzRejestracjePracownika = () => {
-      document.getElementById('gateSekcjaPracownik')?.classList.add('hidden');
-      document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.remove('hidden');
-    };
-  }
-  if (typeof window.zamknijRejestracjePracownika !== 'function') {
-    window.zamknijRejestracjePracownika = () => {
-      document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.add('hidden');
-      document.getElementById('gateSekcjaPracownik')?.classList.remove('hidden');
-    };
-  }
-  if (typeof window.otworzResetPinModal !== 'function') {
-    window.otworzResetPinModal = () => document.getElementById('gateResetPinBox')?.classList.remove('hidden');
-  }
-  if (typeof window.zamknijResetPinModal !== 'function') {
-    window.zamknijResetPinModal = () => document.getElementById('gateResetPinBox')?.classList.add('hidden');
-  }
+  window.otworzRejestracjePracownika = () => {
+    document.getElementById('gateSekcjaPracownik')?.classList.add('hidden');
+    document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.remove('hidden');
+  };
+  window.zamknijRejestracjePracownika = () => {
+    document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.add('hidden');
+    document.getElementById('gateSekcjaPracownik')?.classList.remove('hidden');
+  };
+  window.otworzResetPinModal = () => document.getElementById('gateResetPinBox')?.classList.remove('hidden');
+  window.zamknijResetPinModal = () => document.getElementById('gateResetPinBox')?.classList.add('hidden');
 
   function setGateError(id, message) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.textContent = message;
+    el.textContent = String(message || 'Wystąpił nieoczekiwany błąd.');
     el.classList.remove('hidden');
   }
-
   function clearGateError(id) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -104,7 +84,6 @@ function initLoginGateFallback() {
     if (!normalizedEmail || !normalizedPin) throw new Error('Podaj e-mail i kod PIN.');
     if (!window.db || !window.db.auth) throw new Error('Klient Supabase nie został załadowany. Odśwież stronę.');
 
-    // PIN is the password in the initial onboarding/registration flow.
     const { data, error } = await window.db.auth.signInWithPassword({
       email: normalizedEmail,
       password: normalizedPin
@@ -122,75 +101,73 @@ function initLoginGateFallback() {
       .limit(1);
 
     if (!profileError) profile = profileRows?.[0] || null;
-
-    if (profile && profile.status && profile.status !== 'active') {
+    if (profile?.status && profile.status !== 'active') {
       await window.db.auth.signOut();
       throw new Error('Konto oczekuje na aktywację przez administratora.');
     }
-
     if (profile && requiredRole === 'admin' && !['admin', 'manager'].includes(profile.role)) {
       await window.db.auth.signOut();
       throw new Error('To konto nie ma uprawnień administratora.');
     }
 
-    if (profile && requiredRole === 'staff' && profile.role === 'admin') {
-      await window.db.auth.signOut();
-      throw new Error('To konto ma rolę administratora. Zaloguj się w zakładce Administrator.');
+    const remember = document.getElementById(rememberId)?.checked !== false;
+    if (remember) {
+      localStorage.setItem('sf_active_session', JSON.stringify({ user, profile, remember: true, loggedAt: new Date().toISOString() }));
+    } else {
+      localStorage.removeItem('sf_active_session');
     }
-
-    window.localStorage.setItem('sf_active_session', JSON.stringify({
-      user,
-      profile,
-      remember: document.getElementById(rememberId)?.checked !== false,
-      loggedAt: new Date().toISOString()
-    }));
 
     document.getElementById('authGateOverlay')?.classList.add('hidden');
     document.getElementById('appHeader')?.classList.remove('hidden');
     document.getElementById('appMain')?.classList.remove('hidden');
-
     window.dispatchEvent(new CustomEvent('smakflow-login', { detail: { user, profile } }));
   }
 
-  if (typeof window.zalogujAdminaZGate !== 'function') {
-    window.zalogujAdminaZGate = async function () {
-      clearGateError('gateAdminBlad');
-      try {
-        await completeGateLogin(
-          document.getElementById('gateAdminEmail')?.value,
-          document.getElementById('gateAdminPin')?.value,
-          'admin',
-          'gateZapamietajAdmina'
-        );
-      } catch (error) {
-        setGateError('gateAdminBlad', error?.message || 'Nie udało się zalogować administratora.');
-      }
-    };
-  }
+  // Te funkcje są celowo nadpisywane po załadowaniu strony. Inline <script>
+  // na końcu index.html nie może zastąpić ich uszkodzonymi handlerami.
+  window.zalogujAdminaZGate = async function () {
+    clearGateError('gateAdminBlad');
+    try {
+      await completeGateLogin(
+        document.getElementById('gateAdminEmail')?.value,
+        document.getElementById('gateAdminPin')?.value,
+        'admin',
+        'gateZapamietajAdmina'
+      );
+    } catch (error) {
+      setGateError('gateAdminBlad', error?.message || 'Nie udało się zalogować administratora.');
+    }
+  };
 
-  if (typeof window.zalogujPracownikaZGate !== 'function') {
-    window.zalogujPracownikaZGate = async function () {
-      clearGateError('gatePracownikBlad');
-      try {
-        await completeGateLogin(
-          document.getElementById('gatePracownikEmail')?.value,
-          document.getElementById('gatePracownikPin')?.value,
-          'staff',
-          'gateZapamietajPracownika'
-        );
-      } catch (error) {
-        setGateError('gatePracownikBlad', error?.message || 'Nie udało się zalogować pracownika.');
-      }
-    };
-  }
+  window.zalogujPracownikaZGate = async function () {
+    clearGateError('gatePracownikBlad');
+    try {
+      await completeGateLogin(
+        document.getElementById('gatePracownikEmail')?.value,
+        document.getElementById('gatePracownikPin')?.value,
+        'staff',
+        'gateZapamietajPracownika'
+      );
+    } catch (error) {
+      setGateError('gatePracownikBlad', error?.message || 'Nie udało się zalogować pracownika.');
+    }
+  };
 
   document.querySelectorAll('#authGateOverlay button').forEach((button) => {
     button.style.pointerEvents = 'auto';
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLoginGateFallback);
-} else {
+function bootstrapLoginGate() {
   initLoginGateFallback();
+  // Drugi etap naprawia sytuację, gdy skrypt inline nadpisze funkcje globalne
+  // w trakcie końcowego parsowania strony.
+  setTimeout(initLoginGateFallback, 0);
+  setTimeout(initLoginGateFallback, 300);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrapLoginGate);
+} else {
+  bootstrapLoginGate();
 }
