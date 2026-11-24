@@ -32,7 +32,7 @@ function initLoginGateFallback() {
     developer: 'gateSekcjaDeveloper'
   };
 
-  window.przelaczZakladkeGate = function (tab) {
+  const switchGateTab = function (tab) {
     Object.entries(ids).forEach(([name, id]) => {
       const section = document.getElementById(id);
       if (section) section.classList.toggle('hidden', name !== tab);
@@ -54,6 +54,7 @@ function initLoginGateFallback() {
     }
   };
 
+  window.przelaczZakladkeGate = switchGateTab;
   window.otworzRejestracjePracownika = () => {
     document.getElementById('gateSekcjaPracownik')?.classList.add('hidden');
     document.getElementById('gateSekcjaRejestracjaPracownika')?.classList.remove('hidden');
@@ -123,8 +124,6 @@ function initLoginGateFallback() {
     window.dispatchEvent(new CustomEvent('smakflow-login', { detail: { user, profile } }));
   }
 
-  // Te funkcje są celowo nadpisywane po załadowaniu strony. Inline <script>
-  // na końcu index.html nie może zastąpić ich uszkodzonymi handlerami.
   window.zalogujAdminaZGate = async function () {
     clearGateError('gateAdminBlad');
     try {
@@ -153,6 +152,34 @@ function initLoginGateFallback() {
     }
   };
 
+  // Direct DOM listeners are independent of broken inline onclick handlers.
+  const adminTab = document.getElementById('btnGateTabAdmin');
+  const staffTab = document.getElementById('btnGateTabPracownik');
+  const developerTab = document.getElementById('btnGateTabDev');
+  const adminLoginButton = [...document.querySelectorAll('#gateSekcjaAdmin button')]
+    .find((button) => button.textContent?.includes('Zaloguj jako administrator'));
+  const staffLoginButton = [...document.querySelectorAll('#gateSekcjaPracownik button')]
+    .find((button) => button.textContent?.includes('Zaloguj jako pracownik'));
+
+  [adminTab, staffTab, developerTab, adminLoginButton, staffLoginButton].forEach((element) => {
+    if (element) element.removeAttribute('onclick');
+  });
+
+  adminTab?.addEventListener('click', () => switchGateTab('admin'));
+  staffTab?.addEventListener('click', () => switchGateTab('pracownik'));
+  developerTab?.addEventListener('click', () => switchGateTab('developer'));
+  adminLoginButton?.addEventListener('click', () => window.zalogujAdminaZGate());
+  staffLoginButton?.addEventListener('click', () => window.zalogujPracownikaZGate());
+
+  const adminPin = document.getElementById('gateAdminPin');
+  const staffPin = document.getElementById('gatePracownikPin');
+  adminPin?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') window.zalogujAdminaZGate();
+  });
+  staffPin?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') window.zalogujPracownikaZGate();
+  });
+
   document.querySelectorAll('#authGateOverlay button').forEach((button) => {
     button.style.pointerEvents = 'auto';
   });
@@ -160,8 +187,6 @@ function initLoginGateFallback() {
 
 function bootstrapLoginGate() {
   initLoginGateFallback();
-  // Drugi etap naprawia sytuację, gdy skrypt inline nadpisze funkcje globalne
-  // w trakcie końcowego parsowania strony.
   setTimeout(initLoginGateFallback, 0);
   setTimeout(initLoginGateFallback, 300);
 }
